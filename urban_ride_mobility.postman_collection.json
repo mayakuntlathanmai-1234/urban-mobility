@@ -1,0 +1,379 @@
+{
+	"info": {
+		"_postman_id": "c9f01c76-58c1-437d-8dcf-urban-ride-postman-v2",
+		"name": "Urban Ride Mobility Microservices API (Verified)",
+		"description": "Complete 100% Verified Postman API Collection for Urban Ride Mobility Microservices Stack (API Gateway: http://localhost:5000).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "rideId",
+			"value": "replace-with-actual-ride-id",
+			"type": "string"
+		},
+		{
+			"key": "driverId",
+			"value": "driver-101",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "🔐 Auth Service",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Sarah Jenkins\",\n  \"email\": \"sarah@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"PASSENGER\",\n  \"phone\": \"+1987654321\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"passenger@urbanride.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Auth Service Health",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🚗 Ride Service",
+			"item": [
+				{
+					"name": "Estimate Fare",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pickupLat\": 37.7749,\n  \"pickupLng\": -122.4194,\n  \"destLat\": 37.7833,\n  \"destLng\": -122.4167\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/rides/estimate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides", "estimate"]
+						}
+					}
+				},
+				{
+					"name": "Create Ride Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "passenger-101"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"passengerId\": \"passenger-101\",\n  \"passengerName\": \"Sarah Jenkins\",\n  \"pickupAddress\": \"123 Main St, Downtown\",\n  \"destAddress\": \"456 Park Ave, Uptown\",\n  \"pickupLat\": 37.7749,\n  \"pickupLng\": -122.4194,\n  \"destLat\": 37.7833,\n  \"destLng\": -122.4167,\n  \"rideType\": \"SEDAN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/rides",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides"]
+						}
+					}
+				},
+				{
+					"name": "Get Available Rides (For Drivers)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/rides/available",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides", "available"]
+						}
+					}
+				},
+				{
+					"name": "List All Rides",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/rides",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides"]
+						}
+					}
+				},
+				{
+					"name": "Get Ride By ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/rides/{{rideId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides", "{{rideId}}"]
+						}
+					}
+				},
+				{
+					"name": "Accept Ride (Atomic Driver Lock)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Driver-Id",
+								"value": "{{driverId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"driverId\": \"{{driverId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/rides/{{rideId}}/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides", "{{rideId}}", "accept"]
+						}
+					}
+				},
+				{
+					"name": "Mark Driver Arrived",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/rides/{{rideId}}/arrive",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides", "{{rideId}}", "arrive"]
+						}
+					}
+				},
+				{
+					"name": "Start Ride",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/rides/{{rideId}}/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides", "{{rideId}}", "start"]
+						}
+					}
+				},
+				{
+					"name": "Complete Ride",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/rides/{{rideId}}/complete",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rides", "{{rideId}}", "complete"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🚖 Driver Service",
+			"item": [
+				{
+					"name": "List All Drivers",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/drivers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "drivers"]
+						}
+					}
+				},
+				{
+					"name": "Toggle Online / Offline Status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"isOnline\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/drivers/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "drivers", "status"]
+						}
+					}
+				},
+				{
+					"name": "Update GPS Location",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"latitude\": 37.7750,\n  \"longitude\": -122.4190\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/drivers/location",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "drivers", "location"]
+						}
+					}
+				},
+				{
+					"name": "Get Driver Service Health",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/drivers/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "drivers", "health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💳 Payment Service",
+			"item": [
+				{
+					"name": "Process Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rideId\": \"{{rideId}}\",\n  \"amount\": 77.00,\n  \"paymentMethod\": \"CASH\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/process",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "process"]
+						}
+					}
+				},
+				{
+					"name": "Get Payment Details By Ride ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/ride/{{rideId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "ride", "{{rideId}}"]
+						}
+					}
+				},
+				{
+					"name": "Payment Service Health",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🌐 API Gateway & System Health",
+			"item": [
+				{
+					"name": "Gateway Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "health"]
+						}
+					}
+				},
+				{
+					"name": "Eureka Service Discovery Apps",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8761/eureka/apps",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8761",
+							"path": ["eureka", "apps"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

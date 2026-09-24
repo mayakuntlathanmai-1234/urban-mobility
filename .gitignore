@@ -1,0 +1,16 @@
+# Build outputs & targets
+**/target/
+**/node_modules/
+**/dist/
+**/build/
+
+# Logs & temp files
+*.log
+*.tmp
+
+# IDE & OS configuration
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
