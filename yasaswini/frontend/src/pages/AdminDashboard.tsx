@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Car, DollarSign, Activity, Settings, Search, Edit2, Check, ShieldCheck, Database, Server } from 'lucide-react';
+import { Users, Activity, Settings, Search, Edit2, Check, ShieldCheck } from 'lucide-react';
 import { fetchApi } from '../services/api';
 import { MapView } from '../components/map/MapView';
 import { FareConfig, Driver, User } from '../types';
@@ -33,25 +33,25 @@ export const AdminDashboard: React.FC = () => {
   const fetchAdminData = async () => {
     try {
       const resMetrics = await fetchApi<{ metrics: any }>('/admin/metrics');
-      setMetrics(resMetrics.metrics);
+      if (resMetrics?.metrics) setMetrics(resMetrics.metrics);
 
       const resConfigs = await fetchApi<{ configs: FareConfig[] }>('/admin/fare-configs');
-      setFareConfigs(resConfigs.configs);
+      if (resConfigs?.configs) setFareConfigs(resConfigs.configs);
 
       const resUsers = await fetchApi<{ users: User[] }>('/admin/users');
-      setUsers(resUsers.users);
+      if (resUsers?.users) setUsers(resUsers.users);
 
       const resDrivers = await fetchApi<{ drivers: Driver[] }>('/drivers/nearby');
-      setDrivers(resDrivers.drivers);
+      if (resDrivers?.drivers) setDrivers(resDrivers.drivers);
     } catch (err) {
       console.error('Failed to fetch admin data:', err);
     }
   };
 
   const handleEditConfig = (config: FareConfig) => {
-    setEditingType(config.vehicleType);
+    setEditingType(config.vehicleType || config.rideType || 'ECONOMY');
     setEditBaseFare(config.baseFare);
-    setEditPerKmFare(config.perKmFare);
+    setEditPerKmFare(config.perKmFare || config.perKmRate || 15);
   };
 
   const handleSaveConfig = async (vehicleType: string) => {
@@ -74,14 +74,14 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(u => {
+  const filteredUsers = users.filter((u) => {
     const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = !roleFilter || u.role === roleFilter;
+    const matchesRole = !roleFilter || u.role.includes(roleFilter);
     return matchesSearch && matchesRole;
   });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 p-4">
       {/* Header Banner */}
       <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-2xl flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -96,7 +96,7 @@ export const AdminDashboard: React.FC = () => {
 
         <button
           onClick={fetchAdminData}
-          className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-750 text-xs font-bold text-gray-300 border border-gray-700"
+          className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-750 text-xs font-bold text-gray-300 border border-gray-700 transition-all"
         >
           Refresh System Data
         </button>
@@ -116,7 +116,9 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl">
           <span className="text-[11px] font-mono text-gray-400 block">Online Drivers</span>
-          <span className="text-2xl font-black text-amber-400 font-mono">{metrics.onlineDrivers} / {metrics.totalDrivers}</span>
+          <span className="text-2xl font-black text-amber-400 font-mono">
+            {metrics.onlineDrivers} / {metrics.totalDrivers}
+          </span>
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl">
@@ -138,12 +140,14 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {fareConfigs.map((fc) => {
-            const isEditing = editingType === fc.vehicleType;
+            const vType = fc.vehicleType || fc.rideType || 'ECONOMY';
+            const isEditing = editingType === vType;
+            const perKm = fc.perKmFare ?? fc.perKmRate ?? 15;
 
             return (
-              <div key={fc.vehicleType} className="bg-gray-950 border border-gray-800 rounded-2xl p-4 space-y-3">
+              <div key={vType} className="bg-gray-950 border border-gray-800 rounded-2xl p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-white text-sm">{fc.vehicleType}</span>
+                  <span className="font-extrabold text-white text-sm">{vType}</span>
                   {!isEditing ? (
                     <button
                       onClick={() => handleEditConfig(fc)}
@@ -153,7 +157,7 @@ export const AdminDashboard: React.FC = () => {
                     </button>
                   ) : (
                     <button
-                      onClick={() => handleSaveConfig(fc.vehicleType)}
+                      onClick={() => handleSaveConfig(vType)}
                       disabled={savingFare}
                       className="p-1 rounded bg-emerald-500 text-gray-950 font-bold"
                     >
@@ -170,11 +174,11 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex justify-between text-gray-400">
                       <span>Per KM:</span>
-                      <span className="text-emerald-400 font-bold">₹{fc.perKmFare}/km</span>
+                      <span className="text-emerald-400 font-bold">₹{perKm}/km</span>
                     </div>
                     <div className="flex justify-between text-gray-400">
                       <span>Capacity:</span>
-                      <span className="text-gray-200">{fc.capacity} seats</span>
+                      <span className="text-gray-200">{fc.capacity || 4} seats</span>
                     </div>
                   </div>
                 ) : (
@@ -254,11 +258,15 @@ export const AdminDashboard: React.FC = () => {
                   <td className="p-3 font-bold text-white">{u.name}</td>
                   <td className="p-3 text-gray-400">{u.email}</td>
                   <td className="p-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                      u.role === 'ADMIN' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
-                      u.role === 'DRIVER' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
-                      'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        u.role.includes('ADMIN')
+                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                          : u.role.includes('DRIVER')
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      }`}
+                    >
                       {u.role}
                     </span>
                   </td>

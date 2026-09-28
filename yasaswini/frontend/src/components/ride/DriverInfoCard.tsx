@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, MessageSquare, Star, Shield, Car, XCircle } from 'lucide-react';
+import { Phone, MessageSquare, Star, Car, XCircle } from 'lucide-react';
 import { Driver, RideStatus } from '../../types';
 
 interface DriverInfoCardProps {
@@ -10,8 +10,8 @@ interface DriverInfoCardProps {
 }
 
 export const DriverInfoCard: React.FC<DriverInfoCardProps> = ({ driver, etaMins = 4, status, onCancelRide }) => {
-  const driverName = driver.user?.name || 'Rahul Kumar';
-  const driverPhone = driver.user?.phone || '+91 98765 43210';
+  const driverName = driver.name || driver.user?.name || 'Rahul Kumar';
+  const driverPhone = driver.phone || driver.user?.phone || '+91 98765 43210';
   const vehicle = driver.vehicle || { make: 'Hyundai', model: 'i20', color: 'White', plateNumber: 'AP 39 AB 1234' };
 
   return (

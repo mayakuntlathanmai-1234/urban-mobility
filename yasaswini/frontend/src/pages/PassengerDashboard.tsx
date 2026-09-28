@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Compass, Search, Car, AlertCircle, RefreshCw, Play, Zap, CheckCircle2 } from 'lucide-react';
+import { MapPin, Navigation, Compass, Car, AlertCircle, Play } from 'lucide-react';
 import { MapView } from '../components/map/MapView';
 import { RideTypeCard } from '../components/ride/RideTypeCard';
 import { DriverInfoCard } from '../components/ride/DriverInfoCard';
@@ -7,7 +7,7 @@ import { RideStatusStepper } from '../components/ride/RideStatusStepper';
 import { ReceiptModal } from '../components/ride/ReceiptModal';
 import { RatingModal } from '../components/ride/RatingModal';
 import { fetchApi } from '../services/api';
-import { socket } from '../services/socket';
+import { realtimeService } from '../services/socket';
 import { Ride, FareEstimate, Driver, RideType } from '../types';
 
 export const PassengerDashboard: React.FC = () => {
@@ -24,8 +24,8 @@ export const PassengerDashboard: React.FC = () => {
 
   // Estimates & Vehicle Selection State
   const [estimates, setEstimates] = useState<FareEstimate[]>([]);
-  const [selectedType, setSelectedType] = useState<RideType>('SEDAN');
-  const [calculating, setCalculating] = useState<boolean>(false);
+  const [selectedType, setSelectedType] = useState<RideType>('ECONOMY');
+  const [, setCalculating] = useState<boolean>(false);
 
   // Active Ride & Telemetry State
   const [activeRide, setActiveRide] = useState<Ride | null>(null);
@@ -43,41 +43,28 @@ export const PassengerDashboard: React.FC = () => {
     handleEstimateFare();
   }, [pickupLat, pickupLng, destLat, destLng]);
 
-  // Listen for Real-Time Socket.IO Updates
+  // Listen for Real-Time WebSockets Updates
   useEffect(() => {
     if (!activeRide) return;
 
-    socket.emit('join:ride', activeRide.id);
-
-    const handleStatusChange = (data: { rideId: string; status: any; ride: Ride }) => {
-      if (data.rideId === activeRide.id) {
-        setActiveRide(data.ride);
-        if (data.status === 'COMPLETED') {
+    const unsubscribe = realtimeService.subscribe((event) => {
+      if (event.ride && event.ride.id === activeRide.id) {
+        setActiveRide(event.ride);
+        if (event.ride.status === 'COMPLETED' || event.ride.status === 'RIDE_COMPLETED') {
           setShowReceipt(true);
         }
       }
-    };
-
-    const handleLocationUpdate = (data: { driverId: string; latitude: number; longitude: number }) => {
-      if (activeRide?.driver?.id === data.driverId) {
-        setAssignedDriverLoc({ lat: data.latitude, lng: data.longitude });
-      }
-    };
-
-    socket.on('ride:status:change', handleStatusChange);
-    socket.on('driver:location:update', handleLocationUpdate);
+    });
 
     return () => {
-      socket.off('ride:status:change', handleStatusChange);
-      socket.off('driver:location:update', handleLocationUpdate);
-      socket.emit('leave:ride', activeRide.id);
+      unsubscribe();
     };
   }, [activeRide?.id]);
 
   const fetchNearbyDrivers = async () => {
     try {
       const res = await fetchApi<{ drivers: Driver[] }>('/drivers/nearby');
-      setNearbyDrivers(res.drivers);
+      setNearbyDrivers(res.drivers || []);
     } catch (err) {
       console.error('Failed to fetch nearby drivers:', err);
     }
@@ -89,9 +76,9 @@ export const PassengerDashboard: React.FC = () => {
     try {
       const res = await fetchApi<{ distanceKm: number; estimatedTimeMin: number; estimates: FareEstimate[] }>('/rides/estimate', {
         method: 'POST',
-        body: JSON.stringify({ pickupLat, pickupLng, destLat, destLng })
+        body: JSON.stringify({ pickupLat, pickupLng, destLat, destLng }),
       });
-      setEstimates(res.estimates);
+      setEstimates(res.estimates || []);
     } catch (err: any) {
       setError(err.message || 'Failed to estimate fare');
     } finally {
@@ -143,8 +130,8 @@ export const PassengerDashboard: React.FC = () => {
           destLng,
           destAddress,
           rideType: selectedType,
-          paymentMethod: 'CASH'
-        })
+          paymentMethod: 'CASH',
+        }),
       });
       setActiveRide(res.ride);
 
@@ -168,7 +155,7 @@ export const PassengerDashboard: React.FC = () => {
     try {
       await fetchApi(`/rides/${activeRide.id}/cancel`, {
         method: 'POST',
-        body: JSON.stringify({ reason: 'Passenger cancelled' })
+        body: JSON.stringify({ reason: 'Passenger cancelled' }),
       });
       setActiveRide(null);
     } catch (err: any) {
@@ -176,19 +163,21 @@ export const PassengerDashboard: React.FC = () => {
     }
   };
 
-  // Automated 1-Click Simulator Handler
   const handleTriggerSimulation = async () => {
     if (!activeRide || !activeRide.driverId) return;
-    socket.emit('simulation:start', {
-      rideId: activeRide.id,
-      driverId: activeRide.driverId
-    });
+    try {
+      await fetchApi(`/rides/${activeRide.id}/simulate`, { method: 'POST' });
+    } catch (e) {
+      console.warn('Simulation notice:', e);
+    }
   };
 
-  const selectedEstimate = estimates.find(e => e.vehicleType === selectedType) || estimates[0];
+  const selectedEstimate = estimates.find((e) => e.vehicleType === selectedType) || estimates[0];
+
+  const mapSelectionMode = selectionMode === 'dest' ? 'destination' : selectionMode;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 p-4">
       {/* Notifications / Errors */}
       {error && (
         <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3.5 rounded-2xl text-xs flex items-center justify-between shadow-lg">
@@ -196,7 +185,9 @@ export const PassengerDashboard: React.FC = () => {
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{error}</span>
           </div>
-          <button onClick={() => setError('')} className="text-xs font-bold text-rose-400 hover:underline">Dismiss</button>
+          <button onClick={() => setError('')} className="text-xs font-bold text-rose-400 hover:underline">
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -231,7 +222,9 @@ export const PassengerDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectionMode(selectionMode === 'pickup' ? null : 'pickup')}
-                      className={`text-[10px] font-mono hover:underline ${selectionMode === 'pickup' ? 'text-emerald-400 font-bold' : 'text-gray-500'}`}
+                      className={`text-[10px] font-mono hover:underline ${
+                        selectionMode === 'pickup' ? 'text-emerald-400 font-bold' : 'text-gray-500'
+                      }`}
                     >
                       {selectionMode === 'pickup' ? 'Cancel Click' : 'Select on Map'}
                     </button>
@@ -253,7 +246,9 @@ export const PassengerDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectionMode(selectionMode === 'dest' ? null : 'dest')}
-                      className={`text-[10px] font-mono hover:underline ${selectionMode === 'dest' ? 'text-rose-400 font-bold' : 'text-gray-500'}`}
+                      className={`text-[10px] font-mono hover:underline ${
+                        selectionMode === 'dest' ? 'text-rose-400 font-bold' : 'text-gray-500'
+                      }`}
                     >
                       {selectionMode === 'dest' ? 'Cancel Click' : 'Select on Map'}
                     </button>
@@ -277,7 +272,7 @@ export const PassengerDashboard: React.FC = () => {
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {estimates.map((est) => (
                     <RideTypeCard
-                      key={est.vehicleType}
+                      key={est.vehicleType || 'ECONOMY'}
                       estimate={est}
                       isSelected={selectedType === est.vehicleType}
                       onSelect={(t) => setSelectedType(t)}
@@ -294,7 +289,9 @@ export const PassengerDashboard: React.FC = () => {
                     onClick={handleRequestRide}
                     className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-gray-950 font-black text-sm shadow-xl shadow-emerald-500/25 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
                   >
-                    <span>Request {selectedType} Ride &bull; ₹{selectedEstimate.estimatedFare}</span>
+                    <span>
+                      Request {selectedType} Ride &bull; ₹{selectedEstimate.estimatedFare}
+                    </span>
                   </button>
                 </div>
               )}
@@ -313,10 +310,7 @@ export const PassengerDashboard: React.FC = () => {
                   <p className="text-xs text-gray-400 max-w-xs mx-auto">
                     Searching for suitable {activeRide.rideType} drivers near {activeRide.pickupAddress}.
                   </p>
-                  <button
-                    onClick={handleCancelRide}
-                    className="mt-2 text-xs font-bold text-rose-400 hover:underline"
-                  >
+                  <button onClick={handleCancelRide} className="mt-2 text-xs font-bold text-rose-400 hover:underline">
                     Cancel Request
                   </button>
                 </div>
@@ -361,7 +355,7 @@ export const PassengerDashboard: React.FC = () => {
             assignedDriver={activeRide?.driver as Driver | null}
             assignedDriverLoc={assignedDriverLoc}
             onSelectLocation={handleMapClickSelect}
-            selectionMode={selectionMode}
+            selectionMode={mapSelectionMode}
             height="580px"
           />
         </div>
@@ -383,7 +377,7 @@ export const PassengerDashboard: React.FC = () => {
       {showRating && activeRide && (
         <RatingModal
           rideId={activeRide.id}
-          driverName={activeRide.driver?.user?.name}
+          driverName={activeRide.driver?.name || activeRide.driver?.user?.name}
           onClose={() => setShowRating(false)}
         />
       )}

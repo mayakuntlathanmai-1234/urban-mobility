@@ -1,146 +1,194 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Car, Mail, Lock, ArrowRight, ShieldCheck, UserCheck, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { fetchApi } from '../services/api';
-import { User as UserType } from '../types';
+import { Navigation, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState<string>('passenger@urbanride.com');
-  const [password, setPassword] = useState<string>('password123');
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     setLoading(true);
-    setError('');
 
     try {
-      const res = await fetchApi<{ token: string; user: UserType }>('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
-
-      login(res.token, res.user);
-
-      if (res.user.role === 'PASSENGER') navigate('/passenger');
-      else if (res.user.role === 'DRIVER') navigate('/driver');
-      else if (res.user.role === 'ADMIN') navigate('/admin');
+      const user = await login({ email, password });
+      
+      // Redirect based on backend role
+      if (user.role === 'ROLE_DRIVER') {
+        navigate('/driver/dashboard');
+      } else if (user.role === 'ROLE_ADMIN') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/passenger/dashboard');
+      }
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      const msg = err.response?.data?.message || err.response?.data?.error || 'Invalid credentials. Please try again.';
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickLogin = async (presetEmail: string, targetPath: string) => {
-    setEmail(presetEmail);
-    setPassword('password123');
-    try {
-      const res = await fetchApi<{ token: string; user: UserType }>('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email: presetEmail, password: 'password123' })
-      });
-      login(res.token, res.user);
-      navigate(targetPath);
-    } catch (err: any) {
-      setError(err.message || 'Quick login failed');
-    }
-  };
-
   return (
-    <div className="min-h-[85vh] flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
-            <Car className="w-7 h-7 text-gray-950 font-bold" />
-          </div>
-          <h2 className="text-2xl font-black text-white">Log In to Urban Ride</h2>
-          <p className="text-xs text-gray-400">Enter credentials or choose a quick demo account below.</p>
-        </div>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-blue-500 selection:text-white">
+      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-200/80">
+        
+        {/* Left Section: Branding & Visual */}
+        <div className="lg:col-span-5 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-700 p-8 sm:p-12 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 -mb-12 -ml-12 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl" />
 
-        {error && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3 rounded-xl text-xs text-center font-medium">
-            {error}
+          {/* Top Logo */}
+          <div className="relative z-10">
+            <Link to="/" className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20">
+                <Navigation className="w-5 h-5 fill-white/20 stroke-[2.5]" />
+              </div>
+              <span className="text-xl font-extrabold tracking-tight">
+                URBAN <span className="text-cyan-300">RIDE</span>
+              </span>
+            </Link>
           </div>
-        )}
 
-        {/* Quick Demo Presets */}
-        <div className="space-y-2 bg-gray-950 p-3 rounded-2xl border border-gray-800">
-          <span className="text-[10px] text-gray-500 font-mono block text-center uppercase tracking-wider">
-            1-Click Demo Quick Sign-In
-          </span>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => handleQuickLogin('passenger@urbanride.com', '/passenger')}
-              className="py-2 px-2 bg-gray-900 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-[11px] font-bold transition-all text-center"
-            >
-              Passenger
-            </button>
-            <button
-              onClick={() => handleQuickLogin('driver@urbanride.com', '/driver')}
-              className="py-2 px-2 bg-gray-900 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-[11px] font-bold transition-all text-center"
-            >
-              Driver
-            </button>
-            <button
-              onClick={() => handleQuickLogin('admin@urbanride.com', '/admin')}
-              className="py-2 px-2 bg-gray-900 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl text-[11px] font-bold transition-all text-center"
-            >
-              Admin
-            </button>
-          </div>
-        </div>
+          {/* Tagline & Copy */}
+          <div className="relative z-10 my-12 space-y-4">
+            <h2 className="text-3xl font-extrabold leading-tight">
+              Welcome back to smart urban mobility.
+            </h2>
+            <p className="text-xs text-blue-100 leading-relaxed font-medium">
+              Access your real-time ride dashboard, view driver telemetry, and manage completed payment transactions.
+            </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-gray-300 block mb-1">Email Address</label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-                required
-              />
+            <div className="pt-4 flex items-center gap-3 text-xs font-semibold text-cyan-200">
+              <ShieldCheck className="w-4 h-4 text-emerald-300" />
+              <span>Secured by Auth Service JWT & BCrypt Encryption</span>
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-gray-300 block mb-1">Password</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-                required
-              />
-            </div>
+          {/* Footer Info */}
+          <div className="relative z-10 text-[11px] text-blue-200/70 font-medium">
+            © {new Date().getFullYear()} Urban Ride Mobility Platform
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-gray-950 font-black text-xs shadow-xl shadow-emerald-500/20 flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+        {/* Right Section: Login Form */}
+        <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+            className="max-w-md mx-auto w-full space-y-6"
           >
-            <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </form>
+            <div>
+              <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Sign In to Your Account</h3>
+              <p className="text-xs text-slate-500 mt-1 font-medium">
+                Enter your credentials to access your passenger or driver portal.
+              </p>
+            </div>
 
-        <div className="text-center text-xs text-gray-400">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-emerald-400 font-bold hover:underline">
-            Create new account
-          </Link>
+            {/* Error Message Alert */}
+            {errorMessage && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <span>⚠️ {errorMessage}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="passenger@urbanride.com"
+                    className="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium text-slate-900 bg-slate-50/50"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-10 py-3 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium text-slate-900 bg-slate-50/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>Sign In</span>
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Quick Demo Credentials helper */}
+            <div className="pt-4 border-t border-slate-200/60 text-xs text-slate-500">
+              <p className="font-bold text-slate-700 mb-1">Demo Accounts:</p>
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <button 
+                  onClick={() => { setEmail('passenger@urbanride.com'); setPassword('Password123!'); }}
+                  className="p-2 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-left font-mono"
+                >
+                  Passenger Demo
+                </button>
+                <button 
+                  onClick={() => { setEmail('driver@urbanride.com'); setPassword('Password123!'); }}
+                  className="p-2 rounded-lg bg-slate-100 hover:bg-cyan-50 hover:text-cyan-700 text-left font-mono"
+                >
+                  Driver Demo
+                </button>
+              </div>
+            </div>
+
+            <div className="text-center pt-2 text-xs font-semibold text-slate-600">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-blue-600 hover:underline font-bold">
+                Create Account
+              </Link>
+            </div>
+          </motion.div>
         </div>
+
       </div>
     </div>
   );

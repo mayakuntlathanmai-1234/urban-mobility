@@ -1,126 +1,265 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Car, User as UserIcon, Shield, LogOut, History, Play, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Role } from '../../types';
+import { 
+  Navigation, 
+  Car, 
+  History, 
+  CreditCard, 
+  User, 
+  LogOut, 
+  Bell, 
+  ShieldCheck, 
+  Menu, 
+  X,
+  Compass
+} from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { user, logout, switchRole } = useAuth();
+  const { user, role, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleRoleSwitch = async (role: Role) => {
-    await switchRole(role);
-    if (role === 'PASSENGER') navigate('/passenger');
-    if (role === 'DRIVER') navigate('/driver');
-    if (role === 'ADMIN') navigate('/admin');
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <header className="bg-gray-900/90 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Brand Logo & Name */}
-        <Link to="/" className="flex items-center space-x-3 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-            <Car className="w-6 h-6 text-gray-950 font-bold" />
-          </div>
-          <div>
-            <h1 className="text-lg font-black text-white tracking-tight flex items-center">
-              Urban Ride <span className="text-emerald-400 ml-1 font-semibold">Mobility</span>
-            </h1>
-            <p className="text-[10px] text-gray-400 font-mono leading-none">Smart Dispatch & Real-Time Tracking</p>
-          </div>
-        </Link>
+    <header className="sticky top-0 z-50 glass-nav border-b border-slate-200/80">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          
+          {/* Logo & Branding */}
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+              <Navigation className="w-5 h-5 fill-white/20 stroke-[2.5]" />
+            </div>
+            <div>
+              <span className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1">
+                URBAN <span className="text-blue-600">RIDE</span>
+              </span>
+              <p className="text-[10px] font-medium text-slate-500 -mt-1 tracking-wider uppercase">Move smarter. Ride better.</p>
+            </div>
+          </Link>
 
-        {/* Quick Demo Role Preset Switcher */}
-        <div className="hidden lg:flex items-center space-x-1.5 bg-gray-950 p-1.5 rounded-xl border border-gray-800">
-          <span className="text-[10px] text-gray-500 font-mono px-2">Demo Switcher:</span>
-          <button
-            onClick={() => handleRoleSwitch('PASSENGER')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              user?.role === 'PASSENGER'
-                ? 'bg-emerald-500 text-gray-950 shadow-md'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            Passenger
-          </button>
-          <button
-            onClick={() => handleRoleSwitch('DRIVER')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              user?.role === 'DRIVER'
-                ? 'bg-emerald-500 text-gray-950 shadow-md'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            Driver
-          </button>
-          <button
-            onClick={() => handleRoleSwitch('ADMIN')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              user?.role === 'ADMIN'
-                ? 'bg-purple-500 text-white shadow-md'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            Admin
-          </button>
-        </div>
+          {/* Desktop Navigation */}
+          {isAuthenticated ? (
+            <nav className="hidden md:flex items-center gap-1">
+              {role === 'ROLE_PASSENGER' && (
+                <>
+                  <Link
+                    to="/passenger/dashboard"
+                    className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                      isActive('/passenger/dashboard')
+                        ? 'bg-blue-50 text-blue-600 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    }`}
+                  >
+                    <Compass className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/passenger/book"
+                    className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                      isActive('/passenger/book')
+                        ? 'bg-blue-50 text-blue-600 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    }`}
+                  >
+                    <Navigation className="w-4 h-4" />
+                    Book Ride
+                  </Link>
+                  <Link
+                    to="/passenger/rides"
+                    className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                      isActive('/passenger/rides')
+                        ? 'bg-blue-50 text-blue-600 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    }`}
+                  >
+                    <History className="w-4 h-4" />
+                    My Rides
+                  </Link>
+                  <Link
+                    to="/passenger/payments"
+                    className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                      isActive('/passenger/payments')
+                        ? 'bg-blue-50 text-blue-600 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    }`}
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Payments
+                  </Link>
+                </>
+              )}
 
-        {/* User Status & Actions */}
-        <div className="flex items-center space-x-3">
-          {user ? (
-            <>
-              <Link
-                to="/history"
-                className="p-2 rounded-xl bg-gray-800 hover:bg-gray-750 text-gray-300 hover:text-white border border-gray-700/60 transition-all"
-                title="Ride History"
-              >
-                <History className="w-4 h-4" />
-              </Link>
+              {role === 'ROLE_DRIVER' && (
+                <>
+                  <Link
+                    to="/driver/dashboard"
+                    className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                      isActive('/driver/dashboard')
+                        ? 'bg-cyan-50 text-cyan-700 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    }`}
+                  >
+                    <Car className="w-4 h-4" />
+                    Driver Console
+                  </Link>
+                  <Link
+                    to="/driver/requests"
+                    className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                      isActive('/driver/requests')
+                        ? 'bg-cyan-50 text-cyan-700 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    }`}
+                  >
+                    <Navigation className="w-4 h-4" />
+                    Ride Requests
+                  </Link>
+                  <Link
+                    to="/driver/earnings"
+                    className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                      isActive('/driver/earnings')
+                        ? 'bg-cyan-50 text-cyan-700 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    }`}
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Earnings
+                  </Link>
+                </>
+              )}
 
-              <div className="flex items-center space-x-2.5 bg-gray-950 px-3 py-1.5 rounded-xl border border-gray-800">
-                <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/30">
-                  {user.name.charAt(0)}
-                </div>
-                <div className="text-left hidden sm:block">
-                  <div className="text-xs font-bold text-white leading-none">{user.name}</div>
-                  <div className="text-[10px] text-gray-400 font-mono mt-0.5">{user.email}</div>
-                </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold border ${
-                  user.role === 'ADMIN' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
-                  user.role === 'DRIVER' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
-                  'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                }`}>
-                  {user.role}
-                </span>
-              </div>
-
-              <button
-                onClick={logout}
-                className="p-2 rounded-xl bg-gray-800 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 border border-gray-700 hover:border-rose-500/40 transition-all"
-                title="Log Out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </>
+              {role === 'ROLE_ADMIN' && (
+                <Link
+                  to="/admin/dashboard"
+                  className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                    isActive('/admin/dashboard')
+                      ? 'bg-amber-50 text-amber-700 shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  System Ops
+                </Link>
+              )}
+            </nav>
           ) : (
-            <div className="flex items-center space-x-2">
+            <div className="hidden md:flex items-center gap-3">
               <Link
                 to="/login"
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-gray-800 hover:bg-gray-750 text-white border border-gray-700 transition-all"
+                className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
               >
-                Log In
+                Sign In
               </Link>
               <Link
                 to="/register"
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-gray-950 shadow-lg shadow-emerald-500/20 transition-all"
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/20 transition-all hover:scale-105"
               >
-                Sign Up
+                Get Started
               </Link>
             </div>
           )}
+
+          {/* Right Action Icons & Profile Dropdown */}
+          {isAuthenticated && (
+            <div className="hidden md:flex items-center gap-3">
+              {/* Notification Bell */}
+              <button 
+                aria-label="Notifications"
+                className="p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors relative"
+              >
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 animate-ping" />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600" />
+              </button>
+
+              {/* User Profile Pill */}
+              <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
+                <div className="flex flex-col text-right">
+                  <span className="text-xs font-bold text-slate-900">{user?.name || 'User'}</span>
+                  <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">
+                    {role === 'ROLE_DRIVER' ? 'Driver' : role === 'ROLE_ADMIN' ? 'Admin' : 'Passenger'}
+                  </span>
+                </div>
+                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 font-bold flex items-center justify-center border border-blue-200 shadow-sm">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                </div>
+                <button
+                  onClick={handleLogout}
+                  title="Logout"
+                  className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden glass-nav border-b border-slate-200 px-4 pt-3 pb-6 space-y-2">
+          {isAuthenticated ? (
+            <>
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl mb-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">{user?.name}</p>
+                  <p className="text-xs text-slate-500">{user?.email}</p>
+                </div>
+              </div>
+
+              {role === 'ROLE_PASSENGER' && (
+                <>
+                  <Link to="/passenger/dashboard" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">Dashboard</Link>
+                  <Link to="/passenger/book" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">Book Ride</Link>
+                  <Link to="/passenger/rides" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">My Rides</Link>
+                  <Link to="/passenger/payments" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">Payments</Link>
+                </>
+              )}
+
+              {role === 'ROLE_DRIVER' && (
+                <>
+                  <Link to="/driver/dashboard" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700">Driver Console</Link>
+                  <Link to="/driver/requests" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700">Ride Requests</Link>
+                  <Link to="/driver/earnings" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700">Earnings</Link>
+                </>
+              )}
+
+              <button
+                onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                className="w-full text-left px-3 py-2.5 rounded-xl font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 mt-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <div className="space-y-2 pt-2">
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="block w-full py-2.5 text-center font-semibold text-slate-700 bg-slate-100 rounded-xl">Sign In</Link>
+              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="block w-full py-2.5 text-center font-semibold text-white bg-blue-600 rounded-xl shadow-md">Get Started</Link>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 };

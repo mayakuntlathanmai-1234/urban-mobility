@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Power, DollarSign, CheckCircle2, Star, Navigation, MapPin, Phone, User, Play, AlertCircle } from 'lucide-react';
+import { Power, Star, Navigation, AlertCircle } from 'lucide-react';
 import { MapView } from '../components/map/MapView';
 import { fetchApi } from '../services/api';
-import { socket } from '../services/socket';
+import { realtimeService } from '../services/socket';
 import { Driver, Ride } from '../types';
 
 export const DriverDashboard: React.FC = () => {
@@ -18,7 +18,7 @@ export const DriverDashboard: React.FC = () => {
     rating: 4.8
   });
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -26,35 +26,26 @@ export const DriverDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Listen for incoming ride requests over Socket.IO
-    socket.on('ride:new_request', (data: { ride: Ride }) => {
-      if (isOnline && !activeRide) {
-        setIncomingRequest(data.ride);
-      }
-    });
-
-    socket.on('ride:status:change', (data: { rideId: string; status: any; ride: Ride }) => {
-      if (driver && data.ride?.driverId === driver.id) {
-        if (['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED', 'RIDE_STARTED'].includes(data.status)) {
-          setActiveRide(data.ride);
-          setIncomingRequest(null);
-        } else if (['COMPLETED', 'CANCELLED_BY_RIDER', 'CANCELLED_BY_DRIVER'].includes(data.status)) {
-          setActiveRide(null);
-          setIncomingRequest(null);
-          fetchDriverStats();
-        }
-      } else if (activeRide && activeRide.id === data.rideId) {
-        setActiveRide(data.ride);
-        if (['COMPLETED', 'CANCELLED_BY_RIDER', 'CANCELLED_BY_DRIVER'].includes(data.status)) {
-          setActiveRide(null);
-          fetchDriverStats();
+    // Listen for incoming ride requests over STOMP WebSocket
+    const unsubscribe = realtimeService.subscribe((event) => {
+      if (event?.type === 'RIDE_REQUESTED' && isOnline && !activeRide) {
+        setIncomingRequest(event.ride);
+      } else if (event?.type === 'RIDE_ACCEPTED' || event?.type === 'RIDE_STATUS_CHANGE') {
+        if (driver && event.ride?.driverId === driver.id) {
+          if (['DRIVER_ASSIGNED', 'DRIVER_ARRIVING', 'DRIVER_ARRIVED', 'RIDE_STARTED'].includes(event.ride.status)) {
+            setActiveRide(event.ride);
+            setIncomingRequest(null);
+          } else if (['COMPLETED', 'CANCELLED', 'RIDE_COMPLETED'].includes(event.ride.status)) {
+            setActiveRide(null);
+            setIncomingRequest(null);
+            fetchDriverStats();
+          }
         }
       }
     });
 
     return () => {
-      socket.off('ride:new_request');
-      socket.off('ride:status:change');
+      unsubscribe();
     };
   }, [isOnline, activeRide, driver]);
 
@@ -139,7 +130,7 @@ export const DriverDashboard: React.FC = () => {
   const handleCompleteRide = async () => {
     if (!activeRide) return;
     try {
-      const res = await fetchApi<{ ride: Ride }>(`/rides/${activeRide.id}/complete`, { method: 'POST' });
+      await fetchApi<{ ride: Ride }>(`/rides/${activeRide.id}/complete`, { method: 'POST' });
       setActiveRide(null);
       fetchDriverStats();
     } catch (err: any) {
@@ -147,16 +138,16 @@ export const DriverDashboard: React.FC = () => {
     }
   };
 
-  const driverName = driver?.user?.name || 'Rahul Kumar';
+  const driverName = driver?.name || driver?.user?.name || 'Rahul Kumar';
   const vehicleMake = driver?.vehicle?.make || 'Hyundai';
   const vehicleModel = driver?.vehicle?.model || 'i20';
   const vehiclePlate = driver?.vehicle?.plateNumber || 'AP 39 AB 1234';
 
-  const driverLat = driver?.currentLat || 16.5062;
-  const driverLng = driver?.currentLng || 80.6480;
+  const driverLat = driver?.currentLat || 12.9716;
+  const driverLng = driver?.currentLng || 77.5946;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 p-4">
       {/* Error Alert */}
       {error && (
         <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3.5 rounded-2xl text-xs flex items-center justify-between shadow-lg">
@@ -164,7 +155,9 @@ export const DriverDashboard: React.FC = () => {
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{error}</span>
           </div>
-          <button onClick={() => setError('')} className="text-xs font-bold text-rose-400 hover:underline">Dismiss</button>
+          <button onClick={() => setError('')} className="text-xs font-bold text-rose-400 hover:underline">
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -229,7 +222,7 @@ export const DriverDashboard: React.FC = () => {
               ⚡ INCOMING RIDE REQUEST
             </span>
             <span className="text-xs font-mono font-bold text-emerald-400">
-              Est. Fare: ₹{incomingRequest.estimatedFare}
+              Est. Fare: ₹{incomingRequest.estimatedFare || incomingRequest.fare || 150}
             </span>
           </div>
 
@@ -240,13 +233,15 @@ export const DriverDashboard: React.FC = () => {
             </div>
             <div>
               <span className="text-gray-400 block">Distance</span>
-              <span className="font-bold text-white text-sm">{incomingRequest.distanceKm} km (~{incomingRequest.estimatedTimeMin} mins)</span>
+              <span className="font-bold text-white text-sm">
+                {incomingRequest.distanceKm || 5} km (~{incomingRequest.estimatedTimeMin || 12} mins)
+              </span>
             </div>
           </div>
 
           <div className="space-y-1 text-xs font-mono bg-gray-950/80 p-3 rounded-xl border border-gray-800">
             <div><span className="text-emerald-400 font-bold">🟢 Pickup:</span> {incomingRequest.pickupAddress}</div>
-            <div><span className="text-rose-400 font-bold">🔴 Dropoff:</span> {incomingRequest.destAddress}</div>
+            <div><span className="text-rose-400 font-bold">🔴 Dropoff:</span> {incomingRequest.destAddress || incomingRequest.dropoffAddress}</div>
           </div>
 
           <div className="flex items-center space-x-3 pt-1">
@@ -283,7 +278,9 @@ export const DriverDashboard: React.FC = () => {
               <div className="bg-gray-950 p-4 rounded-2xl border border-gray-800 space-y-2 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="font-extrabold text-white text-sm">{activeRide.passenger?.name || 'Rider'}</span>
-                  <span className="text-emerald-400 font-black text-sm">₹{activeRide.estimatedFare}</span>
+                  <span className="text-emerald-400 font-black text-sm">
+                    ₹{activeRide.estimatedFare || activeRide.fare || 150}
+                  </span>
                 </div>
                 <div className="text-gray-400 font-mono">
                   Phone: {activeRide.passenger?.phone || '+91 98765 43210'}
@@ -293,7 +290,7 @@ export const DriverDashboard: React.FC = () => {
               {/* Waypoints */}
               <div className="space-y-2 text-xs font-mono bg-gray-950 p-3 rounded-xl border border-gray-800">
                 <div><span className="text-emerald-400 font-bold">🟢 Pickup:</span> {activeRide.pickupAddress}</div>
-                <div><span className="text-rose-400 font-bold">🔴 Dropoff:</span> {activeRide.destAddress}</div>
+                <div><span className="text-rose-400 font-bold">🔴 Dropoff:</span> {activeRide.destAddress || activeRide.dropoffAddress}</div>
               </div>
 
               {/* Navigation Action Buttons */}
@@ -321,7 +318,7 @@ export const DriverDashboard: React.FC = () => {
                     onClick={handleCompleteRide}
                     className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-gray-950 font-black text-xs shadow-xl shadow-emerald-500/25 transition-all"
                   >
-                    Complete Ride & Collect ₹{activeRide.estimatedFare}
+                    Complete Ride & Collect ₹{activeRide.estimatedFare || activeRide.fare}
                   </button>
                 )}
               </div>
@@ -342,8 +339,24 @@ export const DriverDashboard: React.FC = () => {
         {/* Map Column (7 cols) */}
         <div className="lg:col-span-7">
           <MapView
-            pickup={activeRide ? { lat: activeRide.pickupLat, lng: activeRide.pickupLng, address: activeRide.pickupAddress } : null}
-            destination={activeRide ? { lat: activeRide.destLat, lng: activeRide.destLng, address: activeRide.destAddress } : null}
+            pickup={
+              activeRide
+                ? {
+                    lat: activeRide.pickupLat,
+                    lng: activeRide.pickupLng,
+                    address: activeRide.pickupAddress,
+                  }
+                : null
+            }
+            destination={
+              activeRide
+                ? {
+                    lat: activeRide.destLat || activeRide.dropoffLat || 12.9352,
+                    lng: activeRide.destLng || activeRide.dropoffLng || 77.6245,
+                    address: activeRide.destAddress || activeRide.dropoffAddress,
+                  }
+                : null
+            }
             assignedDriver={driver}
             assignedDriverLoc={{ lat: driverLat, lng: driverLng }}
             height="500px"

@@ -1,204 +1,166 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Driver, RideType } from '../../types';
+import 'leaflet/dist/leaflet.css';
+import { Driver } from '../../types';
 
-// Custom SVG Icons for Leaflet markers
-const createCustomIcon = (type: 'pickup' | 'dest' | 'driver' | 'assigned', vehicleType?: RideType) => {
-  let color = '#22c55e'; // Green pickup
-  let emoji = '📍';
-  let size = 32;
+export interface MapViewProps {
+  pickupLat?: number;
+  pickupLng?: number;
+  dropoffLat?: number;
+  dropoffLng?: number;
+  driverLat?: number;
+  driverLng?: number;
+  pickupAddress?: string;
+  dropoffAddress?: string;
+  className?: string;
 
-  if (type === 'dest') {
-    color = '#ef4444'; // Red dest
-    emoji = '🏁';
-  } else if (type === 'driver') {
-    color = '#3b82f6'; // Blue available driver
-    emoji = vehicleType === 'BIKE' ? '🛵' : vehicleType === 'AUTO' ? '🛺' : vehicleType === 'SUV' ? '🚙' : '🚗';
-    size = 28;
-  } else if (type === 'assigned') {
-    color = '#f59e0b'; // Amber assigned driver
-    emoji = vehicleType === 'BIKE' ? '🛵' : vehicleType === 'AUTO' ? '🛺' : vehicleType === 'SUV' ? '🚙' : '🚗';
-    size = 36;
-  }
-
-  const svgHtml = `
-    <div style="
-      background-color: ${color};
-      width: ${size}px;
-      height: ${size}px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: ${size * 0.5}px;
-      transform: transition: all 0.3s ease;
-    ">
-      ${emoji}
-    </div>
-  `;
-
-  return L.divIcon({
-    html: svgHtml,
-    className: 'custom-leaflet-marker',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2]
-  });
-};
-
-interface MapViewProps {
+  // Additional props from various dashboards
   pickup?: { lat: number; lng: number; address?: string } | null;
   destination?: { lat: number; lng: number; address?: string } | null;
   drivers?: Driver[];
   assignedDriver?: Driver | null;
   assignedDriverLoc?: { lat: number; lng: number } | null;
   onSelectLocation?: (lat: number, lng: number) => void;
-  selectionMode?: 'pickup' | 'dest' | null;
+  selectionMode?: 'pickup' | 'destination' | null;
   height?: string;
 }
 
-// Controller component to smoothly re-center map when locations change
-const MapRecenter: React.FC<{ center: [number, number]; zoom?: number }> = ({ center, zoom = 14 }) => {
+const pickupIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: `<div class="marker-pickup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></div>`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+});
+
+const destIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: `<div class="marker-dest"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+});
+
+const driverIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: `<div class="marker-driver"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 11.2 2 11.6 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></div>`,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+});
+
+const MapBoundsHandler: React.FC<{ points: [number, number][] }> = ({ points }) => {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, zoom, { duration: 1 });
-  }, [center, zoom, map]);
-  return null;
-};
-
-// Click Handler component for setting points directly on map
-const MapClickHandler: React.FC<{ onSelect?: (lat: number, lng: number) => void }> = ({ onSelect }) => {
-  useMapEvents({
-    click(e) {
-      if (onSelect) {
-        onSelect(e.latlng.lat, e.latlng.lng);
-      }
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
     }
-  });
+  }, [points, map]);
   return null;
 };
 
 export const MapView: React.FC<MapViewProps> = ({
+  pickupLat,
+  pickupLng,
+  dropoffLat,
+  dropoffLng,
+  driverLat,
+  driverLng,
+  pickupAddress,
+  dropoffAddress,
+  className = 'h-[400px]',
   pickup,
   destination,
   drivers = [],
   assignedDriver,
   assignedDriverLoc,
-  onSelectLocation,
-  selectionMode,
-  height = '100%'
+  height,
 }) => {
-  // Default Vijayawada, AP center
-  const defaultCenter: [number, number] = [16.5062, 80.6480];
-  const center: [number, number] = pickup
-    ? [pickup.lat, pickup.lng]
-    : defaultCenter;
+  const effectivePickupLat = pickupLat ?? pickup?.lat ?? 12.9716;
+  const effectivePickupLng = pickupLng ?? pickup?.lng ?? 77.5946;
+  const effectivePickupAddress = pickupAddress ?? pickup?.address ?? 'Pickup Location';
 
-  const polylineCoords: [number, number][] =
-    pickup && destination
-      ? [
-          [pickup.lat, pickup.lng],
-          [destination.lat, destination.lng]
-        ]
-      : [];
+  const effectiveDropoffLat = dropoffLat ?? destination?.lat;
+  const effectiveDropoffLng = dropoffLng ?? destination?.lng;
+  const effectiveDropoffAddress = dropoffAddress ?? destination?.address ?? 'Destination';
+
+  const effectiveDriverLat = driverLat ?? assignedDriverLoc?.lat ?? assignedDriver?.currentLat;
+  const effectiveDriverLng = driverLng ?? assignedDriverLoc?.lng ?? assignedDriver?.currentLng;
+
+  const points: [number, number][] = [];
+  if (effectivePickupLat && effectivePickupLng) points.push([effectivePickupLat, effectivePickupLng]);
+  if (effectiveDropoffLat && effectiveDropoffLng) points.push([effectiveDropoffLat, effectiveDropoffLng]);
+  if (effectiveDriverLat && effectiveDriverLng) points.push([effectiveDriverLat, effectiveDriverLng]);
+
+  drivers.forEach((d) => {
+    if (d.currentLat && d.currentLng) {
+      points.push([d.currentLat, d.currentLng]);
+    }
+  });
+
+  const defaultCenter: [number, number] = [effectivePickupLat, effectivePickupLng];
+
+  const containerStyle = height ? `w-full rounded-2xl overflow-hidden border border-slate-200/80 shadow-soft` : `relative w-full rounded-2xl overflow-hidden border border-slate-200/80 shadow-soft ${className}`;
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-gray-800 shadow-2xl" style={{ height }}>
-      <MapContainer
-        center={center}
-        zoom={14}
-        style={{ width: '100%', height: '100%' }}
-        zoomControl={false}
-      >
-        {/* Standard OpenStreetMap Basemap Tiles with Dark Filter - NO API KEY REQUIRED */}
+    <div className={containerStyle} style={height ? { height } : undefined}>
+      <MapContainer center={defaultCenter} zoom={13} scrollWheelZoom={false} className="w-full h-full">
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          maxZoom={19}
-          className="dark-tiles"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <MapRecenter center={center} />
-        <MapClickHandler onSelect={onSelectLocation} />
-
         {/* Pickup Marker */}
-        {pickup && (
-          <Marker position={[pickup.lat, pickup.lng]} icon={createCustomIcon('pickup')}>
-            <Popup>
-              <div className="p-1">
-                <span className="font-bold text-emerald-400 block text-xs">🟢 Pickup Point</span>
-                <span className="text-xs text-gray-200">{pickup.address || 'Selected Pickup'}</span>
-              </div>
+        {effectivePickupLat && effectivePickupLng && (
+          <Marker position={[effectivePickupLat, effectivePickupLng]} icon={pickupIcon}>
+            <Popup className="font-sans text-xs font-semibold">
+              📍 <b>Pickup:</b> {effectivePickupAddress}
             </Popup>
           </Marker>
         )}
 
         {/* Destination Marker */}
-        {destination && (
-          <Marker position={[destination.lat, destination.lng]} icon={createCustomIcon('dest')}>
-            <Popup>
-              <div className="p-1">
-                <span className="font-bold text-rose-400 block text-xs">🔴 Destination</span>
-                <span className="text-xs text-gray-200">{destination.address || 'Selected Destination'}</span>
-              </div>
+        {effectiveDropoffLat && effectiveDropoffLng && (
+          <Marker position={[effectiveDropoffLat, effectiveDropoffLng]} icon={destIcon}>
+            <Popup className="font-sans text-xs font-semibold">
+              🏁 <b>Destination:</b> {effectiveDropoffAddress}
             </Popup>
           </Marker>
         )}
 
-        {/* Route Polyline */}
-        {polylineCoords.length > 1 && (
-          <Polyline
-            positions={polylineCoords}
-            pathOptions={{ color: '#10b981', weight: 4, opacity: 0.85, dashArray: '8, 8' }}
-          />
+        {/* Assigned Driver Marker */}
+        {effectiveDriverLat && effectiveDriverLng && (
+          <Marker position={[effectiveDriverLat, effectiveDriverLng]} icon={driverIcon}>
+            <Popup className="font-sans text-xs font-semibold">
+              🚗 <b>Driver Location</b> ({assignedDriver?.name || 'Assigned Driver'})
+            </Popup>
+          </Marker>
         )}
 
-        {/* Available Nearby Drivers */}
-        {drivers.map(d => {
-          if (assignedDriver && assignedDriver.id === d.id) return null; // Don't duplicate assigned driver
+        {/* Active Nearby Drivers */}
+        {drivers.map((drv) => {
+          if (!drv.currentLat || !drv.currentLng || drv.id === assignedDriver?.id) return null;
           return (
-            <Marker
-              key={d.id}
-              position={[d.currentLat, d.currentLng]}
-              icon={createCustomIcon('driver', d.vehicle?.type)}
-            >
-              <Popup>
-                <div className="p-1 text-xs">
-                  <span className="font-bold text-blue-400 block">{d.user?.name || 'Available Driver'}</span>
-                  <span>{d.vehicle?.make} {d.vehicle?.model} ({d.vehicle?.type})</span>
-                </div>
+            <Marker key={drv.id} position={[drv.currentLat, drv.currentLng]} icon={driverIcon}>
+              <Popup className="font-sans text-xs font-semibold">
+                🚗 <b>Driver:</b> {drv.name}
               </Popup>
             </Marker>
           );
         })}
 
-        {/* Assigned Driver Marker */}
-        {assignedDriver && (
-          <Marker
-            position={[
-              assignedDriverLoc?.lat || assignedDriver.currentLat,
-              assignedDriverLoc?.lng || assignedDriver.currentLng
+        {/* Polyline Route */}
+        {effectivePickupLat && effectivePickupLng && effectiveDropoffLat && effectiveDropoffLng && (
+          <Polyline
+            positions={[
+              [effectivePickupLat, effectivePickupLng],
+              [effectiveDropoffLat, effectiveDropoffLng],
             ]}
-            icon={createCustomIcon('assigned', assignedDriver.vehicle?.type)}
-          >
-            <Popup>
-              <div className="p-1 text-xs">
-                <span className="font-bold text-amber-400 block">🚗 {assignedDriver.user?.name} (Assigned)</span>
-                <span>{assignedDriver.vehicle?.make} {assignedDriver.vehicle?.model} &bull; {assignedDriver.vehicle?.plateNumber}</span>
-              </div>
-            </Popup>
-          </Marker>
+            pathOptions={{ color: '#2563EB', weight: 4, dashArray: '8, 8', opacity: 0.8 }}
+          />
         )}
-      </MapContainer>
 
-      {/* Map Interactive Overlay Info */}
-      {selectionMode && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-900/90 backdrop-blur border border-emerald-500/50 text-emerald-400 px-4 py-2 rounded-full text-xs font-bold shadow-2xl flex items-center space-x-2 z-[1000] animate-bounce">
-          <span>Click anywhere on map to set {selectionMode === 'pickup' ? 'Pickup' : 'Destination'}</span>
-        </div>
-      )}
+        {points.length > 1 && <MapBoundsHandler points={points} />}
+      </MapContainer>
     </div>
   );
 };

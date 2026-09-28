@@ -1,75 +1,103 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Role } from '../types';
-import { fetchApi } from '../services/api';
+import { authApi, LoginDTO, RegisterDTO } from '../api/authApi';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  role: Role | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
   loading: boolean;
-  login: (token: string, user: User) => void;
+  login: (dto: LoginDTO) => Promise<User>;
+  register: (dto: RegisterDTO) => Promise<void>;
   logout: () => void;
-  switchRole: (role: Role) => Promise<void>;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('urm_token'));
-  const [loading, setLoading] = useState<boolean>(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem('urm_token');
-      if (storedToken) {
-        try {
-          const res = await fetchApi<{ user: User }>('/auth/me');
-          setUser(res.user);
-          setToken(storedToken);
-        } catch (err) {
-          console.error('Session expired or invalid:', err);
-          localStorage.removeItem('urm_token');
-          setToken(null);
-          setUser(null);
-        }
+    try {
+      const savedToken = localStorage.getItem('urban_token');
+      const savedUser = localStorage.getItem('urban_user');
+      if (savedToken && savedUser) {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
       }
-      setLoading(false);
-    };
-
-    initAuth();
+    } catch (e) {
+      console.error('Failed to parse saved auth credentials', e);
+      localStorage.removeItem('urban_token');
+      localStorage.removeItem('urban_user');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('urm_token', newToken);
-    setToken(newToken);
-    setUser(newUser);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('urm_token');
-    setToken(null);
-    setUser(null);
-  };
-
-  const switchRole = async (newRole: Role) => {
-    // Helper to quickly log in as preset account for quick demo testing
-    let presetEmail = 'passenger@urbanride.com';
-    if (newRole === 'DRIVER') presetEmail = 'driver@urbanride.com';
-    if (newRole === 'ADMIN') presetEmail = 'admin@urbanride.com';
-
+  const login = async (dto: LoginDTO): Promise<User> => {
+    setIsLoading(true);
     try {
-      const res = await fetchApi<{ token: string; user: User }>('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email: presetEmail, password: 'password123' })
-      });
-      login(res.token, res.user);
-    } catch (err) {
-      console.error('Role switch failed:', err);
+      const data = await authApi.login(dto);
+      if (!data.user) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      const loggedUser = data.user;
+      const jwtToken = data.token || 'demo-jwt-token';
+
+      setUser(loggedUser);
+      setToken(jwtToken);
+
+      localStorage.setItem('urban_token', jwtToken);
+      localStorage.setItem('urban_user', JSON.stringify(loggedUser));
+      localStorage.setItem('urban_user_id', loggedUser.id);
+
+      return loggedUser;
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const register = async (dto: RegisterDTO): Promise<void> => {
+    setIsLoading(true);
+    try {
+      await authApi.register(dto);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('urban_token');
+    localStorage.removeItem('urban_user');
+    localStorage.removeItem('urban_user_id');
+  };
+
+  const role = user?.role || null;
+  const isAuthenticated = !!token && !!user;
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, switchRole }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        role,
+        isAuthenticated,
+        isLoading,
+        loading: isLoading,
+        login,
+        register,
+        logout,
+        setUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

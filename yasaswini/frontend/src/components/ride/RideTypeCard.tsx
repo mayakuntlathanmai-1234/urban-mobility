@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Clock, Zap } from 'lucide-react';
+import { Users, Clock } from 'lucide-react';
 import { FareEstimate, RideType } from '../../types';
 
 interface RideTypeCardProps {
@@ -9,25 +9,32 @@ interface RideTypeCardProps {
 }
 
 export const RideTypeCard: React.FC<RideTypeCardProps> = ({ estimate, isSelected, onSelect }) => {
-  const getVehicleMeta = (type: RideType) => {
+  const vehicleType: RideType = (estimate.vehicleType as RideType) || 'ECONOMY';
+
+  const getVehicleMeta = (type: string) => {
     switch (type) {
       case 'BIKE':
         return { emoji: '🛵', name: 'Bike', badge: 'Cheapest' };
       case 'AUTO':
         return { emoji: '🛺', name: 'Auto', badge: 'Quick City' };
-      case 'SEDAN':
-        return { emoji: '🚗', name: 'Sedan', badge: 'Popular' };
+      case 'PREMIUM':
+        return { emoji: '🚘', name: 'Premium', badge: 'Luxury' };
       case 'SUV':
         return { emoji: '🚙', name: 'SUV', badge: 'Spacious' };
+      case 'ECONOMY':
+      default:
+        return { emoji: '🚗', name: 'Economy', badge: 'Popular' };
     }
   };
 
-  const meta = getVehicleMeta(estimate.vehicleType);
+  const meta = getVehicleMeta(vehicleType);
+  const capacity = estimate.capacity || 4;
+  const estimatedTimeMin = estimate.estimatedTimeMin || 5;
 
   return (
     <button
       type="button"
-      onClick={() => onSelect(estimate.vehicleType)}
+      onClick={() => onSelect(vehicleType)}
       className={`w-full p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex items-center justify-between ${
         isSelected
           ? 'bg-gray-900 border-emerald-500 ring-2 ring-emerald-500/40 shadow-xl shadow-emerald-500/10'
@@ -35,9 +42,11 @@ export const RideTypeCard: React.FC<RideTypeCardProps> = ({ estimate, isSelected
       }`}
     >
       <div className="flex items-center space-x-3.5">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl border ${
-          isSelected ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-gray-800 border-gray-700'
-        }`}>
+        <div
+          className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl border ${
+            isSelected ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-gray-800 border-gray-700'
+          }`}
+        >
           {meta.emoji}
         </div>
 
@@ -52,21 +61,19 @@ export const RideTypeCard: React.FC<RideTypeCardProps> = ({ estimate, isSelected
           <div className="flex items-center space-x-3 text-[11px] text-gray-400 mt-0.5">
             <span className="flex items-center">
               <Users className="w-3 h-3 mr-1 text-gray-500" />
-              Up to {estimate.capacity}
+              Up to {capacity}
             </span>
             <span>&bull;</span>
             <span className="flex items-center">
               <Clock className="w-3 h-3 mr-1 text-gray-500" />
-              {estimate.estimatedTimeMin} mins
+              {estimatedTimeMin} mins
             </span>
           </div>
         </div>
       </div>
 
       <div className="text-right">
-        <div className="text-base font-extrabold text-emerald-400 font-mono">
-          ₹{estimate.estimatedFare}
-        </div>
+        <div className="text-base font-extrabold text-emerald-400 font-mono">₹{estimate.estimatedFare}</div>
         <div className="text-[10px] text-gray-500 font-mono">
           ₹{estimate.baseFare} + ₹{estimate.perKmFare}/km
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Receipt, ShieldCheck, Download, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { Ride } from '../../types';
 
 interface ReceiptModalProps {
@@ -9,7 +9,10 @@ interface ReceiptModalProps {
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ ride, onClose, onRateRide }) => {
-  const fare = ride.finalFare || ride.estimatedFare;
+  const fare = ride.finalFare ?? ride.estimatedFare ?? ride.fare ?? 0;
+  const baseFare = ride.baseFare ?? 30;
+  const distanceKm = ride.distanceKm ?? 5;
+  const perKmFare = ride.perKmFare ?? 12;
 
   return (
     <div className="fixed inset-0 z-[2000] bg-gray-950/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -20,18 +23,18 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ ride, onClose, onRat
             <CheckCircle2 className="w-8 h-8" />
           </div>
           <h3 className="text-xl font-black text-white">Ride Completed!</h3>
-          <p className="text-xs text-gray-400 font-mono">Receipt #{ride.rideNumber}</p>
+          <p className="text-xs text-gray-400 font-mono">Receipt #{ride.rideNumber || ride.id.substring(0, 8)}</p>
         </div>
 
         {/* Fare Summary Breakdown */}
         <div className="bg-gray-950 p-4 rounded-2xl border border-gray-800 space-y-3 font-mono text-xs">
           <div className="flex justify-between text-gray-400 pb-2 border-b border-gray-800">
             <span>Base Fare</span>
-            <span className="text-gray-200 font-bold">₹{ride.baseFare}</span>
+            <span className="text-gray-200 font-bold">₹{baseFare}</span>
           </div>
           <div className="flex justify-between text-gray-400 pb-2 border-b border-gray-800">
-            <span>Distance ({ride.distanceKm} km x ₹{ride.perKmFare}/km)</span>
-            <span className="text-gray-200 font-bold">₹{Math.round(ride.distanceKm * ride.perKmFare)}</span>
+            <span>Distance ({distanceKm} km x ₹{perKmFare}/km)</span>
+            <span className="text-gray-200 font-bold">₹{Math.round(distanceKm * perKmFare)}</span>
           </div>
           <div className="flex justify-between text-gray-400 pb-2 border-b border-gray-800">
             <span>Taxes & Service Fee</span>

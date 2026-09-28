@@ -1,147 +1,137 @@
-export type Role = 'PASSENGER' | 'DRIVER' | 'ADMIN';
-export type RideType = 'BIKE' | 'AUTO' | 'SEDAN' | 'SUV';
+export type Role = 'ROLE_PASSENGER' | 'ROLE_DRIVER' | 'ROLE_ADMIN' | 'PASSENGER' | 'DRIVER' | 'ADMIN';
 
 export type RideStatus =
   | 'REQUESTED'
   | 'SEARCHING_DRIVER'
+  | 'WAITING_FOR_DRIVER'
   | 'DRIVER_ASSIGNED'
   | 'DRIVER_ARRIVING'
   | 'DRIVER_ARRIVED'
   | 'RIDE_STARTED'
+  | 'COMPLETED'
   | 'RIDE_COMPLETED'
   | 'PAYMENT_PENDING'
-  | 'COMPLETED'
-  | 'CANCELLED_BY_RIDER'
-  | 'CANCELLED_BY_DRIVER'
+  | 'CANCELLED'
   | 'NO_DRIVER_FOUND';
 
-export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+export type PaymentMethod = 'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'UPI' | 'WALLET';
+
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
+
+export type RideType = 'ECONOMY' | 'PREMIUM' | 'AUTO' | 'BIKE' | 'SUV';
 
 export interface User {
   id: string;
-  name: string;
   email: string;
+  name: string;
   phone?: string;
   role: Role;
-  driverId?: string;
+  createdAt?: string;
   driver?: Driver;
 }
 
 export interface Vehicle {
-  id: string;
+  id?: string;
+  driverId?: string;
   make: string;
   model: string;
-  year: number;
-  color: string;
+  year?: number;
+  color?: string;
   plateNumber: string;
-  type: RideType;
-  capacity: number;
+  rideType?: string;
 }
 
 export interface Driver {
   id: string;
   userId: string;
-  licenseNumber: string;
+  name: string;
+  phone: string;
+  licenseNumber?: string;
   isOnline: boolean;
-  currentLat: number;
-  currentLng: number;
-  rating: number;
-  totalRides: number;
-  totalEarnings: number;
-  user?: {
-    name: string;
-    phone?: string;
-    email?: string;
-  };
+  currentLat?: number;
+  currentLng?: number;
+  totalEarnings?: number;
+  totalRides?: number;
+  rating?: number;
   vehicle?: Vehicle;
+  user?: User;
 }
 
 export interface Ride {
   id: string;
-  rideNumber: string;
+  rideNumber?: string;
   passengerId: string;
-  driverId?: string;
+  driverId?: string | null;
+  pickupAddress: string;
+  dropoffAddress?: string;
+  destAddress?: string;
   pickupLat: number;
   pickupLng: number;
-  pickupAddress: string;
-  destLat: number;
-  destLng: number;
-  destAddress: string;
+  dropoffLat?: number;
+  dropoffLng?: number;
+  destLat?: number;
+  destLng?: number;
+  fare?: number;
+  estimatedFare?: number;
+  finalFare?: number;
+  baseFare?: number;
+  perKmFare?: number;
+  distanceKm?: number;
+  estimatedTimeMin?: number;
   rideType: RideType;
   status: RideStatus;
-  distanceKm: number;
-  estimatedTimeMin: number;
-  baseFare: number;
-  perKmFare: number;
-  estimatedFare: number;
-  finalFare?: number;
-  paymentMethod: string;
-  paymentStatus: PaymentStatus;
-  requestedAt: string;
-  assignedAt?: string;
-  arrivedAt?: string;
-  startedAt?: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus?: PaymentStatus;
+  requestedAt?: string;
   completedAt?: string;
-  cancelledAt?: string;
+  driverName?: string;
+  vehicleDetails?: string;
+  passenger?: User;
+  driver?: Driver;
   cancelReason?: string;
-
-  passenger?: {
-    id: string;
-    name: string;
-    phone?: string;
-    email?: string;
-  };
-  driver?: {
-    id: string;
-    rating: number;
-    user?: {
-      name: string;
-      phone?: string;
-    };
-    vehicle?: Vehicle;
-  };
-  payment?: Payment;
-  rating?: Rating;
 }
 
 export interface Payment {
   id: string;
   rideId: string;
   amount: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   status: PaymentStatus;
   transactionId?: string;
-  createdAt: string;
-}
-
-export interface Rating {
-  id: string;
-  rideId: string;
-  passengerId: string;
-  driverId: string;
-  score: number;
-  comment?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface FareEstimate {
-  vehicleType: RideType;
+  vehicleType?: string;
   baseFare: number;
   perKmFare: number;
   estimatedFare: number;
+  capacity?: number;
+  estimatedTimeMin?: number;
+}
+
+export interface EstimateResponse {
   distanceKm: number;
   estimatedTimeMin: number;
-  capacity: number;
-  description: string;
+  estimates: Record<string, FareEstimate>;
 }
 
 export interface FareConfig {
-  id: string;
-  vehicleType: RideType;
+  id?: string;
+  rideType?: string;
+  vehicleType?: string;
   baseFare: number;
-  perKmFare: number;
-  perMinFare: number;
-  minFare: number;
-  capacity: number;
-  description: string;
+  perKmFare?: number;
+  perKmRate?: number;
+  perMinRate?: number;
+  surgeMultiplier?: number;
+  capacity?: number;
+}
+
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  loading?: boolean;
 }
