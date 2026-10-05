@@ -133,10 +133,7 @@ export const BookRidePage: React.FC = () => {
   }, [currentRide, isSearching]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <Header />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
         {/* Step Indicator Header */}
         <div className="flex items-center justify-between bg-white p-4 rounded-3xl border border-slate-200/80 shadow-soft">
@@ -418,10 +415,6 @@ export const BookRidePage: React.FC = () => {
           </div>
 
         </div>
-
-      </main>
-
-      <Footer />
     </div>
   );
 };
