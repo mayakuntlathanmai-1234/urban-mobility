@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Navigation, Mail, Lock, User as UserIcon, Phone, Car, Check, ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Navigation, Mail, Lock, User as UserIcon, Phone, Car, ArrowRight } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -47,9 +46,8 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-blue-500 selection:text-white">
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl p-8 sm:p-12 border border-slate-200/80 my-8">
-        
+    <div className="py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center selection:bg-blue-500 selection:text-white max-w-7xl mx-auto">
+      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl p-8 sm:p-12 border border-slate-200/80">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md">
             <Navigation className="w-5 h-5 fill-white/20 stroke-[2.5]" />
@@ -79,9 +77,7 @@ export const RegisterPage: React.FC = () => {
             type="button"
             onClick={() => setRole('ROLE_PASSENGER')}
             className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              role === 'ROLE_PASSENGER'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+              role === 'ROLE_PASSENGER' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <UserIcon className="w-4 h-4" />
@@ -91,9 +87,7 @@ export const RegisterPage: React.FC = () => {
             type="button"
             onClick={() => setRole('ROLE_DRIVER')}
             className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              role === 'ROLE_DRIVER'
-                ? 'bg-white text-cyan-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+              role === 'ROLE_DRIVER' ? 'bg-white text-cyan-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Car className="w-4 h-4" />
@@ -102,7 +96,6 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          
           {/* Full Name */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Full Name</label>

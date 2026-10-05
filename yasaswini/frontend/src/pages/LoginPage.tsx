@@ -21,14 +21,14 @@ export const LoginPage: React.FC = () => {
 
     try {
       const user = await login({ email, password });
-      
+
       // Redirect based on backend role
-      if (user.role === 'ROLE_DRIVER') {
-        navigate('/driver/dashboard');
-      } else if (user.role === 'ROLE_ADMIN') {
-        navigate('/admin/dashboard');
+      if (user.role.includes('DRIVER')) {
+        navigate('/driver');
+      } else if (user.role.includes('ADMIN')) {
+        navigate('/admin');
       } else {
-        navigate('/passenger/dashboard');
+        navigate('/passenger');
       }
     } catch (err: any) {
       const msg = err.response?.data?.message || err.response?.data?.error || 'Invalid credentials. Please try again.';
@@ -39,9 +39,8 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-blue-500 selection:text-white">
+    <div className="py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center selection:bg-blue-500 selection:text-white max-w-7xl mx-auto">
       <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-200/80">
-        
         {/* Left Section: Branding & Visual */}
         <div className="lg:col-span-5 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-700 p-8 sm:p-12 text-white flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl" />
@@ -61,9 +60,7 @@ export const LoginPage: React.FC = () => {
 
           {/* Tagline & Copy */}
           <div className="relative z-10 my-12 space-y-4">
-            <h2 className="text-3xl font-extrabold leading-tight">
-              Welcome back to smart urban mobility.
-            </h2>
+            <h2 className="text-3xl font-extrabold leading-tight">Welcome back to smart urban mobility.</h2>
             <p className="text-xs text-blue-100 leading-relaxed font-medium">
               Access your real-time ride dashboard, view driver telemetry, and manage completed payment transactions.
             </p>
@@ -104,10 +101,11 @@ export const LoginPage: React.FC = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              
               {/* Email */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Email Address</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Email Address
+                </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   <input
@@ -123,7 +121,9 @@ export const LoginPage: React.FC = () => {
 
               {/* Password */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Password</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Password
+                </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   <input
@@ -165,14 +165,22 @@ export const LoginPage: React.FC = () => {
             <div className="pt-4 border-t border-slate-200/60 text-xs text-slate-500">
               <p className="font-bold text-slate-700 mb-1">Demo Accounts:</p>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <button 
-                  onClick={() => { setEmail('passenger@urbanride.com'); setPassword('Password123!'); }}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('passenger@urbanride.com');
+                    setPassword('Password123!');
+                  }}
                   className="p-2 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-left font-mono"
                 >
                   Passenger Demo
                 </button>
-                <button 
-                  onClick={() => { setEmail('driver@urbanride.com'); setPassword('Password123!'); }}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('driver@urbanride.com');
+                    setPassword('Password123!');
+                  }}
                   className="p-2 rounded-lg bg-slate-100 hover:bg-cyan-50 hover:text-cyan-700 text-left font-mono"
                 >
                   Driver Demo
@@ -188,7 +196,6 @@ export const LoginPage: React.FC = () => {
             </div>
           </motion.div>
         </div>
-
       </div>
     </div>
   );
