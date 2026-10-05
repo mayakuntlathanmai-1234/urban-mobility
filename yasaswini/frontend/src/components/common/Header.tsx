@@ -49,12 +49,12 @@ export const Header: React.FC = () => {
           {/* Desktop Navigation */}
           {isAuthenticated ? (
             <nav className="hidden md:flex items-center gap-1">
-              {role === 'ROLE_PASSENGER' && (
+              {(role === 'ROLE_PASSENGER' || role === 'PASSENGER' || role === 'ROLE_ADMIN' || role === 'ADMIN') && (
                 <>
                   <Link
-                    to="/passenger/dashboard"
+                    to="/passenger"
                     className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-                      isActive('/passenger/dashboard')
+                      isActive('/passenger')
                         ? 'bg-blue-50 text-blue-600 shadow-sm'
                         : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                     }`}
@@ -74,9 +74,9 @@ export const Header: React.FC = () => {
                     Book Ride
                   </Link>
                   <Link
-                    to="/passenger/rides"
+                    to="/passenger/history"
                     className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-                      isActive('/passenger/rides')
+                      isActive('/passenger/history')
                         ? 'bg-blue-50 text-blue-600 shadow-sm'
                         : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                     }`}
@@ -98,12 +98,12 @@ export const Header: React.FC = () => {
                 </>
               )}
 
-              {role === 'ROLE_DRIVER' && (
+              {(role === 'ROLE_DRIVER' || role === 'DRIVER' || role === 'ROLE_ADMIN' || role === 'ADMIN') && (
                 <>
                   <Link
-                    to="/driver/dashboard"
+                    to="/driver"
                     className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-                      isActive('/driver/dashboard')
+                      isActive('/driver')
                         ? 'bg-cyan-50 text-cyan-700 shadow-sm'
                         : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                     }`}
@@ -136,11 +136,11 @@ export const Header: React.FC = () => {
                 </>
               )}
 
-              {role === 'ROLE_ADMIN' && (
+              {(role === 'ROLE_ADMIN' || role === 'ADMIN') && (
                 <Link
-                  to="/admin/dashboard"
+                  to="/admin"
                   className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-                    isActive('/admin/dashboard')
+                    isActive('/admin')
                       ? 'bg-amber-50 text-amber-700 shadow-sm'
                       : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                   }`}
@@ -185,7 +185,7 @@ export const Header: React.FC = () => {
                 <div className="flex flex-col text-right">
                   <span className="text-xs font-bold text-slate-900">{user?.name || 'User'}</span>
                   <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">
-                    {role === 'ROLE_DRIVER' ? 'Driver' : role === 'ROLE_ADMIN' ? 'Admin' : 'Passenger'}
+                    {role?.includes('DRIVER') ? 'Driver' : role?.includes('ADMIN') ? 'Admin' : 'Passenger'}
                   </span>
                 </div>
                 <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 font-bold flex items-center justify-center border border-blue-200 shadow-sm">
@@ -227,18 +227,18 @@ export const Header: React.FC = () => {
                 </div>
               </div>
 
-              {role === 'ROLE_PASSENGER' && (
+              {(role === 'ROLE_PASSENGER' || role === 'PASSENGER') && (
                 <>
-                  <Link to="/passenger/dashboard" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">Dashboard</Link>
+                  <Link to="/passenger" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">Dashboard</Link>
                   <Link to="/passenger/book" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">Book Ride</Link>
-                  <Link to="/passenger/rides" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">My Rides</Link>
+                  <Link to="/passenger/history" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">My Rides</Link>
                   <Link to="/passenger/payments" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600">Payments</Link>
                 </>
               )}
 
-              {role === 'ROLE_DRIVER' && (
+              {(role === 'ROLE_DRIVER' || role === 'DRIVER') && (
                 <>
-                  <Link to="/driver/dashboard" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700">Driver Console</Link>
+                  <Link to="/driver" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700">Driver Console</Link>
                   <Link to="/driver/requests" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700">Ride Requests</Link>
                   <Link to="/driver/earnings" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700">Earnings</Link>
                 </>
